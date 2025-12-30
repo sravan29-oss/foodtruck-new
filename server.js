@@ -27,7 +27,12 @@ const PUBLIC_DIR = path.join(__dirname, "..", "public");
 app.use(express.static(PUBLIC_DIR));
 
 /* ---------- DATABASE ---------- */
-const db = new sqlite3.Database("./orders.db");
+const path = require("path");
+
+const db = new sqlite3.Database(
+  path.join(__dirname, "orders.db")
+);
+
 
 db.serialize(() => {
 

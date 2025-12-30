@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Staff Logs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  padding:20px;
+}
+li {
+  margin-bottom:8px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>📜 Staff Activity Logs</h2>
+<ul id="logs"></ul>
+
+<script>
+fetch("/admin/logs", {
+  credentials: "same-origin"
+})
+  .then(r => r.json())
+  .then(data => {
+    logs.innerHTML = data.map(
+      l => `<li>${l.time} — <b>${l.username}</b>: ${l.action}</li>`
+    ).join("");
+  });
+</script>
+
+</body>
+</html>

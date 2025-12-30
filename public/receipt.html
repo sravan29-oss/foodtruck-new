@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Receipt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family:monospace;
+  width:280px;
+  margin:auto;
+  padding:10px;
+}
+
+h2{
+  text-align:center;
+  margin:4px 0;
+}
+
+hr{
+  border:none;
+  border-top:1px dashed #000;
+}
+
+.items div{
+  display:flex;
+  justify-content:space-between;
+}
+
+.total{
+  font-weight:bold;
+  font-size:18px;
+  text-align:right;
+}
+
+.center{
+  text-align:center;
+  font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🍽 Chill With Food</h2>
+<div class="center">Thank you! Visit Again ❤️</div>
+<hr>
+
+<div id="content">Loading…</div>
+
+<hr>
+<div class="center">Powered by Chill POS</div>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+
+fetch("/order/" + id)
+  .then(r => r.json())
+  .then(o => {
+    const items = JSON.parse(o.items)
+      .map(i => `<div><span>${i.name} × ${i.qty}</span><span>₹${i.price * i.qty}</span></div>`)
+      .join("");
+
+    document.getElementById("content").innerHTML = `
+      <div>Order ID: ${o.id}</div>
+      <div>Date: ${o.date || "-"}</div>
+      <div>Time: ${o.time}</div>
+      <div>Table: ${o.table_no}</div>
+      <div>Payment: ${o.payment}</div>
+      <hr>
+      <div class="items">${items}</div>
+      <hr>
+      <div class="total">TOTAL: ₹${o.total}</div>
+    `;
+
+    setTimeout(() => window.print(), 500);
+  });
+</script>
+
+</body>
+</html>

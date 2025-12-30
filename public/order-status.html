@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Order Status</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  background:#111;
+  color:#fff;
+  font-family:Arial,sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.card{
+  background:#1e1e1e;
+  padding:24px;
+  border-radius:18px;
+  width:95%;
+  max-width:380px;
+}
+
+.status{
+  font-size:22px;
+  margin:10px 0;
+}
+.pending{color:#f1c40f}
+.ready{color:#2ecc71}
+.cancelled{color:#e74c3c}
+
+textarea{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:10px;
+  border:none;
+  resize:none;
+  font-size:15px;
+}
+
+button{
+  width:100%;
+  margin-top:10px;
+  padding:12px;
+  border-radius:20px;
+  border:none;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.cancel{background:#e74c3c;color:#fff}
+.send{background:#f39c12;color:#000}
+.reply{color:#2ecc71;margin-top:10px}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2 id="orderId">Order</h2>
+  <p id="cust"></p>
+  <div id="status" class="status"></div>
+
+  <button id="cancelBtn" class="cancel" style="display:none">
+    ❌ Cancel Order
+  </button>
+
+  <textarea id="complaintBox"
+    placeholder="Any issue or delay complaint?"></textarea>
+
+  <button id="sendBtn" class="send">💬 Send Complaint</button>
+
+  <div id="reply" class="reply"></div>
+</div>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+
+const orderIdEl = document.getElementById("orderId");
+const custEl = document.getElementById("cust");
+const statusEl = document.getElementById("status");
+const cancelBtn = document.getElementById("cancelBtn");
+const complaintBox = document.getElementById("complaintBox");
+const sendBtn = document.getElementById("sendBtn");
+const replyEl = document.getElementById("reply");
+
+let locked = false; // 🔒 prevents refresh while typing
+
+complaintBox.addEventListener("input",()=> locked=true);
+complaintBox.addEventListener("blur",()=> locked=false);
+
+function loadStatus(){
+  if(locked) return; // 🚫 HARD STOP
+
+  fetch("/order/"+id)
+    .then(r=>r.json())
+    .then(o=>{
+      if(!o.id) return;
+
+      orderIdEl.innerText = "Order #"+o.id;
+      custEl.innerText = `${o.customer_name||"Guest"} • ${o.customer_phone||""}`;
+
+      statusEl.innerText = o.status;
+      statusEl.className = "status "+o.status.toLowerCase();
+
+      const canCancel =
+        o.status==="Pending" &&
+        Date.now() < o.can_modify_until;
+
+      cancelBtn.style.display = canCancel ? "block" : "none";
+      complaintBox.disabled = !canCancel;
+      sendBtn.style.display = canCancel ? "block" : "none";
+
+      if(o.kitchen_reply){
+        replyEl.innerText = "🍳 Kitchen: "+o.kitchen_reply;
+      }
+    });
+}
+
+cancelBtn.onclick = ()=>{
+  fetch("/order/cancel",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ id })
+  }).then(loadStatus);
+};
+
+sendBtn.onclick = ()=>{
+  const text = complaintBox.value.trim();
+  if(!text) return alert("Please type complaint");
+
+  fetch("/order/complaint",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ id, text })
+  }).then(()=>{
+    alert("Complaint sent");
+    locked=false;
+    loadStatus();
+  });
+};
+
+loadStatus();
+setInterval(loadStatus,3000);
+</script>
+
+</body>
+</html>

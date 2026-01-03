@@ -1,10 +1,10 @@
-const session = require("express-session");
 const express = require("express");
-const path = require("path");
+const session = require("express-session");
 const sqlite3 = require("sqlite3").verbose();
+const path = require("path");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 /* ---------- MIDDLEWARE ---------- */
 app.use(express.json());
@@ -16,27 +16,22 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,     // true only if HTTPS forced
+      secure: false,
       maxAge: 1000 * 60 * 60 * 6
     }
   })
 );
 
-
+/* ---------- STATIC FILES ---------- */
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
 app.use(express.static(PUBLIC_DIR));
 
 /* ---------- DATABASE ---------- */
-const path = require("path");
-
 const db = new sqlite3.Database(
   path.join(__dirname, "orders.db")
 );
 
-
 db.serialize(() => {
-
-  /* ORDERS TABLE */
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,18 +52,14 @@ db.serialize(() => {
     )
   `);
 
-  /* SAFE MIGRATIONS (won’t crash if already exists) */
+  /* SAFE MIGRATIONS */
   db.run("ALTER TABLE orders ADD COLUMN customer_name TEXT", ()=>{});
   db.run("ALTER TABLE orders ADD COLUMN customer_phone TEXT", ()=>{});
   db.run("ALTER TABLE orders ADD COLUMN can_modify_until INTEGER", ()=>{});
   db.run("ALTER TABLE orders ADD COLUMN complaint TEXT", ()=>{});
   db.run("ALTER TABLE orders ADD COLUMN kitchen_reply TEXT", ()=>{});
   db.run("ALTER TABLE orders ADD COLUMN cancelled INTEGER DEFAULT 0", ()=>{});
-  db.run("ALTER TABLE orders ADD COLUMN complaint TEXT", ()=>{});
-  db.run("ALTER TABLE orders ADD COLUMN kitchen_reply TEXT", ()=>{});
 
-
-  /* STAFF */
   db.run(`
     CREATE TABLE IF NOT EXISTS staff (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,6 +102,7 @@ function requireRole(role) {
 /* ---------- AUTH ---------- */
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
+
   db.get(
     "SELECT * FROM staff WHERE username=? AND password=?",
     [username, password],
@@ -159,10 +151,7 @@ app.post("/order", (req, res) => {
       canModifyUntil
     ],
     function (err) {
-      if (err) {
-        console.error(err);
-        return res.json({ success: false });
-      }
+      if (err) return res.json({ success: false });
       res.json({ success: true, orderId: this.lastID });
     }
   );
@@ -206,12 +195,8 @@ app.post("/order/cancel", (req, res) => {
     "SELECT can_modify_until,status FROM orders WHERE id=?",
     [id],
     (e, row) => {
-      if (!row || row.status !== "Pending") {
-        return res.json({ success: false });
-      }
-      if (Date.now() > row.can_modify_until) {
-        return res.json({ success: false });
-      }
+      if (!row || row.status !== "Pending") return res.json({ success: false });
+      if (Date.now() > row.can_modify_until) return res.json({ success: false });
 
       db.run(
         "UPDATE orders SET cancelled=1,status='Cancelled' WHERE id=?",
@@ -225,10 +210,7 @@ app.post("/order/cancel", (req, res) => {
 /* ---------- CUSTOMER COMPLAINT ---------- */
 app.post("/order/complaint", (req, res) => {
   const { id, text } = req.body;
-
-  if (!text || !text.trim()) {
-    return res.json({ success: false });
-  }
+  if (!text?.trim()) return res.json({ success: false });
 
   db.run(
     "UPDATE orders SET complaint=? WHERE id=?",
@@ -240,7 +222,6 @@ app.post("/order/complaint", (req, res) => {
 /* ---------- KITCHEN REPLY ---------- */
 app.post("/order/reply", (req, res) => {
   const { id, reply } = req.body;
-
   db.run(
     "UPDATE orders SET kitchen_reply=? WHERE id=?",
     [reply, id],
@@ -248,11 +229,10 @@ app.post("/order/reply", (req, res) => {
   );
 });
 
-
 /* ---------- ADMIN REPORT ---------- */
 app.get("/admin/report", requireRole("admin"), (req, res) => {
   db.all(
-    `SELECT * FROM orders ORDER BY datetime DESC`,
+    "SELECT * FROM orders ORDER BY datetime DESC",
     [],
     (e, rows) => res.json(rows || [])
   );
@@ -268,6 +248,6 @@ app.get("/kitchen.html", requireRole("kitchen"), (req, res) =>
 );
 
 /* ---------- START ---------- */
-app.listen(PORT, () => {
-  console.log("✅ Server running on http://localhost:3000");
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("✅ Server running on port", PORT);
 });

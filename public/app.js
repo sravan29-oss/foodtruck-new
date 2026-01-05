@@ -1,9 +1,5 @@
 /* ================= API BASE (FINAL FIX) ================= */
-const API_BASE =
-  location.hostname === "localhost"
-    ? "http://localhost:3000"
-    : location.origin;
-
+const API_BASE = location.origin;
 console.log("API_BASE =", API_BASE);
 
 /* ================= LANGUAGE ================= */
@@ -82,7 +78,7 @@ function renderMenu(filter = "all") {
       div.className = "item";
 
       div.innerHTML = `
-        <img src="/images/${item.img}" loading="lazy">
+        <img src="/images/${item.img}">
         <h4>${item.name}</h4>
         <p>₹${item.price}</p>
         <div class="qty">
@@ -97,13 +93,6 @@ function renderMenu(filter = "all") {
 }
 
 renderMenu();
-
-/* ================= FILTER ================= */
-function filterMenu(type, btn) {
-  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  renderMenu(type);
-}
 
 /* ================= CART ================= */
 function updateQty(name, change) {
@@ -132,26 +121,25 @@ function updateTotal() {
 /* ================= PAYMENT ================= */
 function selectPayment(type) {
   paymentMethod = type;
-
-  document.getElementById("cashBtn").classList.remove("active");
-  document.getElementById("upiBtn").classList.remove("active");
-
-  if (type === "Cash") document.getElementById("cashBtn").classList.add("active");
-  if (type === "UPI") document.getElementById("upiBtn").classList.add("active");
+  document.getElementById("cashBtn").classList.toggle("active", type === "Cash");
+  document.getElementById("upiBtn").classList.toggle("active", type === "UPI");
 }
 
-/* ================= PLACE ORDER (WORKING) ================= */
+/* ================= PLACE ORDER (FINAL FIX) ================= */
 function placeOrder() {
   const name = document.getElementById("custName").value.trim();
   const phone = document.getElementById("custPhone").value.trim();
 
-  if (!name) return alert("Please enter your name");
-  if (!phone || phone.length !== 10)
-    return alert("Please enter valid 10-digit phone number");
+  if (!name || phone.length !== 10) {
+    alert("Enter valid name & phone");
+    return;
+  }
 
   const itemsArray = Object.values(cart);
-  if (itemsArray.length === 0)
-    return alert("Please select at least one item");
+  if (!itemsArray.length) {
+    alert("Select items");
+    return;
+  }
 
   fetch(`${API_BASE}/order`, {
     method: "POST",

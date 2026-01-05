@@ -1,8 +1,8 @@
-/* ================= API BASE ================= */
+/* ================= API BASE (FINAL FIX) ================= */
 const API_BASE =
   location.hostname === "localhost"
     ? "http://localhost:3000"
-    : ""; // Railway / production
+    : location.origin;
 
 console.log("API_BASE =", API_BASE);
 
@@ -140,26 +140,18 @@ function selectPayment(type) {
   if (type === "UPI") document.getElementById("upiBtn").classList.add("active");
 }
 
-/* ================= PLACE ORDER (FIXED) ================= */
+/* ================= PLACE ORDER (WORKING) ================= */
 function placeOrder() {
   const name = document.getElementById("custName").value.trim();
   const phone = document.getElementById("custPhone").value.trim();
 
-  if (!name) {
-    alert("Please enter your name");
-    return;
-  }
-
-  if (!phone || phone.length !== 10) {
-    alert("Please enter valid 10-digit phone number");
-    return;
-  }
+  if (!name) return alert("Please enter your name");
+  if (!phone || phone.length !== 10)
+    return alert("Please enter valid 10-digit phone number");
 
   const itemsArray = Object.values(cart);
-  if (itemsArray.length === 0) {
-    alert("Please select at least one item");
-    return;
-  }
+  if (itemsArray.length === 0)
+    return alert("Please select at least one item");
 
   fetch(`${API_BASE}/order`, {
     method: "POST",
@@ -178,7 +170,7 @@ function placeOrder() {
       if (d.success) {
         location.href = `/order-status.html?id=${d.orderId}`;
       } else {
-        alert("Order failed. Please try again.");
+        alert("Order failed");
       }
     })
     .catch(err => {

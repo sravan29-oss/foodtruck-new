@@ -6,7 +6,7 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* ---------- MIDDLEWARE ---------- */
+/* ================= MIDDLEWARE ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -15,21 +15,22 @@ app.use(
     secret: process.env.SESSION_SECRET || "food-secret",
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      secure: false,
-      maxAge: 1000 * 60 * 60 * 6
-    }
+    cookie: { secure: false }
   })
 );
 
-/* ---------- STATIC FILES ---------- */
+/* ================= STATIC FILES ================= */
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
 app.use(express.static(PUBLIC_DIR));
 
-/* ---------- DATABASE ---------- */
-const db = new sqlite3.Database(
-  path.join(__dirname, "orders.db")
-);
+/* ================= DATABASE (FIXED) ================= */
+// Railway-safe DB location
+const DB_PATH = path.join(process.cwd(), "orders.db");
+
+const db = new sqlite3.Database(DB_PATH, err => {
+  if (err) console.error("❌ DB Error:", err);
+  else console.log("✅ SQLite connected:", DB_PATH);
+});
 
 db.serialize(() => {
   db.run(`
@@ -52,11 +53,6 @@ db.serialize(() => {
     )
   `);
 
-  // Safe migrations
-  db.run("ALTER TABLE orders ADD COLUMN complaint TEXT", () => {});
-  db.run("ALTER TABLE orders ADD COLUMN kitchen_reply TEXT", () => {});
-  db.run("ALTER TABLE orders ADD COLUMN cancelled INTEGER DEFAULT 0", () => {});
-
   db.run(`
     CREATE TABLE IF NOT EXISTS staff (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,20 +63,23 @@ db.serialize(() => {
   `);
 
   db.run(
-    `INSERT OR IGNORE INTO staff (username,password,role)
-     VALUES ('admin','admin123','admin')`
+    `INSERT OR IGNORE INTO staff VALUES (1,'admin','admin123','admin')`
   );
   db.run(
-    `INSERT OR IGNORE INTO staff (username,password,role)
-     VALUES ('kitchen','kitchen123','kitchen')`
+    `INSERT OR IGNORE INTO staff VALUES (2,'kitchen','kitchen123','kitchen')`
   );
 });
 
-/* ---------- AUTH ---------- */
+/* ================= HEALTH CHECK ================= */
+app.get("/health", (req, res) => {
+  res.json({ status: "OK" });
+});
+
+/* ================= AUTH ================= */
 function requireRole(role) {
   return (req, res, next) => {
     if (!req.session.user || req.session.user.role !== role) {
-      return res.redirect("/login.html");
+      return res.status(401).json({ success: false });
     }
     next();
   };
@@ -91,7 +90,7 @@ app.post("/login", (req, res) => {
   db.get(
     "SELECT * FROM staff WHERE username=? AND password=?",
     [username, password],
-    (e, user) => {
+    (err, user) => {
       if (!user) return res.json({ success: false });
       req.session.user = user;
       res.json({ success: true, role: user.role });
@@ -99,14 +98,14 @@ app.post("/login", (req, res) => {
   );
 });
 
-app.post("/logout", (req, res) => {
-  req.session.destroy(() => res.json({ success: true }));
-});
-
-/* ---------- ORDERS ---------- */
+/* ================= PLACE ORDER (FIXED) ================= */
 app.post("/order", (req, res) => {
   const { table, name, phone, items, total, payment } = req.body;
   const now = new Date();
+
+  if (!items || !items.length) {
+    return res.json({ success: false });
+  }
 
   db.run(
     `INSERT INTO orders
@@ -125,12 +124,17 @@ app.post("/order", (req, res) => {
       now.toISOString(),
       Date.now() + 60000
     ],
-    function () {
+    function (err) {
+      if (err) {
+        console.error("❌ Order insert failed:", err);
+        return res.status(500).json({ success: false });
+      }
       res.json({ success: true, orderId: this.lastID });
     }
   );
 });
 
+/* ================= KITCHEN ================= */
 app.get("/orders", requireRole("kitchen"), (req, res) => {
   db.all("SELECT * FROM orders ORDER BY datetime DESC", [], (e, rows) =>
     res.json(rows || [])
@@ -146,32 +150,29 @@ app.post("/order/status", (req, res) => {
 });
 
 app.post("/order/complaint", (req, res) => {
-  const { id, text } = req.body;
-  if (!text) return res.json({ success: false });
-
   db.run(
     "UPDATE orders SET complaint=? WHERE id=?",
-    [text.trim(), id],
+    [req.body.text, req.body.id],
     () => res.json({ success: true })
   );
 });
 
 app.post("/order/reply", (req, res) => {
-  const { id, reply } = req.body;
   db.run(
     "UPDATE orders SET kitchen_reply=? WHERE id=?",
-    [reply, id],
+    [req.body.reply, req.body.id],
     () => res.json({ success: true })
   );
 });
 
+/* ================= ADMIN ================= */
 app.get("/admin/report", requireRole("admin"), (req, res) => {
   db.all("SELECT * FROM orders ORDER BY datetime DESC", [], (e, rows) =>
     res.json(rows || [])
   );
 });
 
-/* ---------- START ---------- */
+/* ================= START ================= */
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log("🚀 Server running on port", PORT);
 });

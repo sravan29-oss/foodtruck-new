@@ -1,3 +1,11 @@
+/* ================= API BASE ================= */
+const API_BASE =
+  location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : ""; // Railway / production
+
+console.log("API_BASE =", API_BASE);
+
 /* ================= LANGUAGE ================= */
 let lang = "EN";
 
@@ -132,7 +140,7 @@ function selectPayment(type) {
   if (type === "UPI") document.getElementById("upiBtn").classList.add("active");
 }
 
-/* ================= PLACE ORDER ================= */
+/* ================= PLACE ORDER (FIXED) ================= */
 function placeOrder() {
   const name = document.getElementById("custName").value.trim();
   const phone = document.getElementById("custPhone").value.trim();
@@ -153,7 +161,7 @@ function placeOrder() {
     return;
   }
 
-  fetch("/order", {
+  fetch(`${API_BASE}/order`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -168,10 +176,13 @@ function placeOrder() {
     .then(r => r.json())
     .then(d => {
       if (d.success) {
-        location.href = "/order-status.html?id=" + d.orderId;
+        location.href = `/order-status.html?id=${d.orderId}`;
       } else {
         alert("Order failed. Please try again.");
       }
     })
-    .catch(() => alert("Network error"));
+    .catch(err => {
+      console.error(err);
+      alert("Network error");
+    });
 }

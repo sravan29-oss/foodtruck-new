@@ -4,9 +4,9 @@ const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
-/* ========== MIDDLEWARE ========== */
+/* ================= MIDDLEWARE ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -18,20 +18,20 @@ app.use(
   })
 );
 
-/* ========== STATIC FILES ========== */
+/* ================= STATIC FILES ================= */
 const PUBLIC_DIR = path.join(__dirname, "public");
 app.use(express.static(PUBLIC_DIR));
 
-/* ✅ ROOT ROUTE FIX (IMPORTANT) */
+/* ✅ FIX: SERVE HOME PAGE */
 app.get("/", (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
-/* ========== DATABASE ========== */
+/* ================= DATABASE ================= */
 const DB_PATH = path.join(__dirname, "orders.db");
 
 const db = new sqlite3.Database(DB_PATH, err => {
-  if (err) console.error("❌ DB Error:", err);
+  if (err) console.error("DB Error:", err);
   else console.log("✅ SQLite connected");
 });
 
@@ -69,12 +69,12 @@ db.serialize(() => {
   db.run(`INSERT OR IGNORE INTO staff VALUES (2,'kitchen','kitchen123','kitchen')`);
 });
 
-/* ========== HEALTH CHECK ========== */
+/* ================= HEALTH ================= */
 app.get("/health", (req, res) => {
   res.json({ status: "OK" });
 });
 
-/* ========== AUTH ========== */
+/* ================= AUTH ================= */
 function requireRole(role) {
   return (req, res, next) => {
     if (!req.session.user || req.session.user.role !== role) {
@@ -97,9 +97,10 @@ app.post("/login", (req, res) => {
   );
 });
 
-/* ========== PLACE ORDER ========== */
+/* ================= PLACE ORDER ================= */
 app.post("/order", (req, res) => {
   const { table, name, phone, items, total, payment } = req.body;
+
   if (!items || !items.length) {
     return res.json({ success: false });
   }
@@ -130,7 +131,7 @@ app.post("/order", (req, res) => {
   );
 });
 
-/* ========== START ========== */
+/* ================= START ================= */
 app.listen(PORT, () => {
   console.log("🚀 Server running on port", PORT);
 });

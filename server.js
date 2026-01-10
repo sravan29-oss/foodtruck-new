@@ -4,9 +4,9 @@ const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
-/* ========== MIDDLEWARE ========== */
+/* ================= MIDDLEWARE ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -18,16 +18,23 @@ app.use(
   })
 );
 
-/* ========== STATIC FILES ========== */
-const PUBLIC_DIR = path.join(__dirname, "public");
+/* ================= STATIC FILES (FIXED) ================= */
+// server.js is inside /backend
+// public folder is OUTSIDE backend
+const PUBLIC_DIR = path.join(__dirname, "..", "public");
 app.use(express.static(PUBLIC_DIR));
 
-/* ========== DATABASE ========== */
-const DB_PATH = path.join(__dirname, "orders.db");
+/* ================= ROOT ROUTE (FIXED) ================= */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+});
+
+/* ================= DATABASE (RAILWAY SAFE) ================= */
+const DB_PATH = path.join(process.cwd(), "orders.db");
 
 const db = new sqlite3.Database(DB_PATH, err => {
-  if (err) console.error(err);
-  else console.log("✅ SQLite connected");
+  if (err) console.error("❌ DB error:", err);
+  else console.log("✅ SQLite connected:", DB_PATH);
 });
 
 db.serialize(() => {
@@ -60,14 +67,20 @@ db.serialize(() => {
     )
   `);
 
-  db.run(`INSERT OR IGNORE INTO staff VALUES (1,'admin','admin123','admin')`);
-  db.run(`INSERT OR IGNORE INTO staff VALUES (2,'kitchen','kitchen123','kitchen')`);
+  db.run(
+    `INSERT OR IGNORE INTO staff VALUES (1,'admin','admin123','admin')`
+  );
+  db.run(
+    `INSERT OR IGNORE INTO staff VALUES (2,'kitchen','kitchen123','kitchen')`
+  );
 });
 
-/* ========== HEALTH CHECK ========== */
-app.get("/health", (_, res) => res.json({ ok: true }));
+/* ================= HEALTH CHECK ================= */
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
+});
 
-/* ========== AUTH ========== */
+/* ================= AUTH ================= */
 function requireRole(role) {
   return (req, res, next) => {
     if (!req.session.user || req.session.user.role !== role) {
@@ -90,7 +103,7 @@ app.post("/login", (req, res) => {
   );
 });
 
-/* ========== PLACE ORDER ========== */
+/* ================= PLACE ORDER ================= */
 app.post("/order", (req, res) => {
   const { table, name, phone, items, total, payment } = req.body;
 
@@ -118,13 +131,16 @@ app.post("/order", (req, res) => {
       Date.now() + 60000
     ],
     function (err) {
-      if (err) return res.status(500).json({ success: false });
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ success: false });
+      }
       res.json({ success: true, orderId: this.lastID });
     }
   );
 });
 
-/* ========== CUSTOMER ========== */
+/* ================= CUSTOMER ================= */
 app.get("/order/:id", (req, res) => {
   db.get(
     "SELECT * FROM orders WHERE id=?",
@@ -141,7 +157,7 @@ app.post("/order/complaint", (req, res) => {
   );
 });
 
-/* ========== KITCHEN ========== */
+/* ================= KITCHEN ================= */
 app.get("/orders", requireRole("kitchen"), (req, res) => {
   db.all("SELECT * FROM orders ORDER BY datetime DESC", [], (e, rows) =>
     res.json(rows || [])
@@ -164,14 +180,14 @@ app.post("/order/reply", (req, res) => {
   );
 });
 
-/* ========== ADMIN ========== */
+/* ================= ADMIN ================= */
 app.get("/admin/report", requireRole("admin"), (req, res) => {
   db.all("SELECT * FROM orders ORDER BY datetime DESC", [], (e, rows) =>
     res.json(rows || [])
   );
 });
 
-/* ========== START ========== */
+/* ================= START ================= */
 app.listen(PORT, () => {
   console.log("🚀 Server running on port", PORT);
 });

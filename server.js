@@ -1,5 +1,6 @@
 const express = require("express");
 const session = require("express-session");
+const SQLiteStore = require("connect-sqlite3")(session);
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
@@ -10,19 +11,27 @@ const PORT = process.env.PORT || 8080;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+/* ========== SESSION (PRODUCTION SAFE) ========== */
 app.use(
   session({
+    store: new SQLiteStore({
+      db: "sessions.db",
+      dir: process.cwd()
+    }),
     secret: process.env.SESSION_SECRET || "food-secret",
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 6 // 6 hours
+    }
   })
 );
 
-/* ========== STATIC FILES (FIXED) ========== */
+/* ========== STATIC FILES ========== */
 const PUBLIC_DIR = path.join(__dirname, "public");
 app.use(express.static(PUBLIC_DIR));
 
-/* 👉 HOME PAGE FIX */
+/* ========== HOME PAGE ========== */
 app.get("/", (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
@@ -129,6 +138,11 @@ app.post("/order", (req, res) => {
       res.json({ success: true, orderId: this.lastID });
     }
   );
+});
+
+/* ========== FALLBACK (STATIC ROUTES SAFETY) ========== */
+app.get("*", (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
 /* ========== START SERVER ========== */

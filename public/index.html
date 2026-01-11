@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Chill With Food</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="top">
+  🍽 Chill With Food
+</header>
+
+<!-- 🔹 TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="filterMenu('all', this)">All</button>
+  <button class="tab" onclick="filterMenu('nonveg', this)">Non-Veg</button>
+  <button class="tab" onclick="filterMenu('veg', this)">Veg</button>
+  <button class="tab" onclick="filterMenu('snacks', this)">Snacks</button>
+  <button class="tab" onclick="filterMenu('drinks', this)">Drinks</button>
+</div>
+<div class="customer-box">
+  <div class="field">
+    <label>👤 Name</label>
+    <input id="custName" placeholder="Enter your name">
+  </div>
+
+  <div class="field">
+    <label>📞 Phone</label>
+    <input id="custPhone" placeholder="10-digit mobile" maxlength="10">
+  </div>
+</div>
+
+
+<!-- 🔹 MENU (THIS WAS THE BUG) -->
+<div id="menu" class="menu"></div>
+
+<!-- 🔹 CART -->
+<div class="cart">
+  <h3><span id="totalLabel">Total</span>: ₹<span id="total">0</span></h3>
+
+
+  <div class="pay-tabs">
+    <button id="cashBtn" onclick="selectPayment('Cash')">💵 CASH</button>
+    <button id="upiBtn" onclick="selectPayment('UPI')">📱 UPI</button>
+  </div>
+
+  <button id="orderBtn" onclick="placeOrder()">Place Order</button>
+<button onclick="toggleLang()">🌐 EN / తెలుగు</button>
+
+
+
+</div>
+
+<script src="app.js"></script>
+<script>
+applyLang();
+</script>
+</body>
+</html>

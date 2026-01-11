@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Staff Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.box {
+  background:#1e1e1e;
+  padding:30px;
+  border-radius:16px;
+  width:320px;
+  text-align:center;
+}
+
+input {
+  width:100%;
+  padding:10px;
+  margin:10px 0;
+  border-radius:8px;
+  border:none;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:25px;
+  background:#2ecc71;
+  font-size:16px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>🔐 Staff Login</h2>
+
+  <input id="user" placeholder="Username">
+  <input id="pass" type="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+</div>
+
+<script>
+function login() {
+  fetch("/login", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      username: user.value,
+      password: pass.value
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(!d.success) {
+      alert("Invalid login");
+      return;
+    }
+
+    if(d.role==="admin") {
+      location.href="/admin.html";
+    } else {
+      location.href="/kitchen.html";
+    }
+  });
+}
+</script>
+
+</body>
+</html>

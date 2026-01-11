@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Reports</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#0f0f0f;
+  color:#fff;
+}
+
+header{
+  background:#111;
+  padding:16px;
+  font-size:26px;
+  text-align:center;
+  font-weight:bold;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+header button{
+  background:#222;
+  color:#fff;
+  border:none;
+  padding:8px 16px;
+  border-radius:18px;
+  cursor:pointer;
+}
+
+.summary{
+  display:flex;
+  justify-content:space-around;
+  margin:20px;
+  font-size:18px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:12px;
+  border-bottom:1px solid #333;
+  text-align:center;
+}
+
+th{background:#1e1e1e}
+tr:hover{background:#1a1a1a}
+
+.paid{color:#2ecc71;font-weight:bold}
+.unpaid{color:#e74c3c;font-weight:bold}
+
+.complaint{
+  color:#f39c12;
+  font-size:14px;
+  max-width:240px;
+  word-wrap:break-word;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  📊 Admin Reports
+  <button onclick="logout()">Logout</button>
+</header>
+
+<div class="summary">
+  <div>Total Orders: <span id="count">0</span></div>
+  <div>UPI: ₹<span id="upi">0</span></div>
+  <div>Cash: ₹<span id="cash">0</span></div>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Date</th>
+  <th>Time</th>
+  <th>Table</th>
+  <th>Total</th>
+  <th>Payment</th>
+  <th>Status</th>
+  <th>Complaint</th>
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+
+<script>
+function logout(){
+  fetch("/logout",{method:"POST"})
+    .then(()=>location.href="/login.html");
+}
+
+fetch("/admin/report",{credentials:"same-origin"})
+  .then(res=>{
+    // ❗ If redirected to login page, response is HTML not JSON
+    if(!res.headers.get("content-type")?.includes("application/json")){
+      location.href="/login.html";
+      return;
+    }
+    return res.json();
+  })
+  .then(data=>{
+    if(!Array.isArray(data)){
+      location.href="/login.html";
+      return;
+    }
+
+    const rows=document.getElementById("rows");
+    rows.innerHTML="";
+
+    let upi=0,cash=0;
+    document.getElementById("count").innerText=data.length;
+
+    data.forEach(o=>{
+      if(o.payment==="UPI") upi+=o.total;
+      else cash+=o.total;
+
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>#${o.id}</td>
+        <td>${o.date||"-"}</td>
+        <td>${o.time||"-"}</td>
+        <td>${o.table_no||"-"}</td>
+        <td>₹${o.total}</td>
+        <td class="${o.payment==="UPI"?"paid":"unpaid"}">${o.payment}</td>
+        <td>${o.status}</td>
+        <td class="complaint">${o.complaint||"—"}</td>
+      `;
+      rows.appendChild(tr);
+    });
+
+    document.getElementById("upi").innerText=upi;
+    document.getElementById("cash").innerText=cash;
+  })
+  .catch(()=>{
+    alert("Server not responding. Please refresh.");
+  });
+</script>
+
+</body>
+</html>

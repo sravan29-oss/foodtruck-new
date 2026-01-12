@@ -5,11 +5,7 @@
   "scripts": {
     "start": "node server.js"
   },
-  "engines": {
-    "node": "18.x"
-  },
   "dependencies": {
-    "connect-sqlite3": "^0.9.16",
     "express": "^4.19.2",
     "express-session": "^1.17.3",
     "sqlite3": "^5.1.7"

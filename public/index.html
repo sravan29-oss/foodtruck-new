@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Food Truck</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-
 <link rel="stylesheet" href="style.css">
 </head>
 
@@ -29,6 +28,18 @@
     <input id="custPhone" placeholder="Phone Number" maxlength="10">
   </section>
 
+  <div class="tools">
+    <div class="search">
+      <input id="searchInput" placeholder="Search dishes...">
+    </div>
+    <div class="filters">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="veg">Veg</button>
+      <button class="chip" data-filter="spicy">Spicy</button>
+      <button class="chip" data-filter="popular">Popular</button>
+    </div>
+  </div>
+
   <div class="tabs">
     <button class="tab active" data-type="nonveg">Non-Veg</button>
     <button class="tab" data-type="veg">Veg</button>
@@ -47,8 +58,26 @@
     Total ₹<span id="total">0</span>
   </div>
 
-  <button class="orderBtn" onclick="placeOrder()">Place Order</button>
+  <div class="orderActions">
+    <button class="cartBtn" onclick="toggleCart()">Cart <span id="cartCount">0</span></button>
+    <button class="orderBtn" onclick="placeOrder()">Place Order</button>
+  </div>
 </main>
+
+<div id="cartPanel" class="cartPanel">
+  <div class="cartHeader">
+    <h3>Your Cart</h3>
+    <button class="cartClose" onclick="toggleCart()">Close</button>
+  </div>
+  <div id="cartItems" class="cartItems"></div>
+  <div class="cartFooter">
+    <div>Total ₹<span id="cartTotal">0</span></div>
+    <button class="orderBtn" onclick="placeOrder()">Place Order</button>
+  </div>
+</div>
+<div id="cartBackdrop" class="cartBackdrop" onclick="toggleCart()"></div>
+
+<div id="toast" class="toast"></div>
 
 <script src="app.js"></script>
 </body>

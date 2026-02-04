@@ -6,50 +6,126 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&display=swap");
+
+:root{
+  --bg:#0b0d12;
+  --card:#131826;
+  --text:#f5f7fb;
+  --muted:#aab4c6;
+  --accent:#ffb347;
+  --accent-2:#5cf0a5;
+  --line:#212840;
+  --shadow:0 12px 30px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+
 body{
   margin:0;
-  font-family:Segoe UI,Arial;
-  background:#0f0f0f;
-  color:#fff;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+  font-family:Inter, "Helvetica Neue", Arial, sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #243052 0%, rgba(36,48,82,0) 60%),
+    radial-gradient(900px 400px at 90% 0%, #2a1f3f 0%, rgba(42,31,63,0) 55%),
+    var(--bg);
   min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
 }
 
 .card{
-  background:#1c1c1c;
-  width:92%;
-  max-width:420px;
-  border-radius:18px;
+  width:100%;
+  max-width:520px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:20px;
   padding:20px;
-  animation:fade .4s ease;
+  box-shadow:var(--shadow);
+  animation:fade .35s ease;
 }
 
 @keyframes fade{
-  from{opacity:0;transform:translateY(12px)}
+  from{opacity:0;transform:translateY(10px)}
   to{opacity:1}
 }
 
-h2{text-align:center;margin-bottom:8px}
+.title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
 
-.status{
-  text-align:center;
-  font-size:22px;
+.title h2{
+  margin:0;
+  font-family:Fraunces, serif;
+  font-size:24px;
+}
+
+.pill{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+
+.pending{background:#2b2a1a;color:#f1c40f}
+.accepted{background:#1f2a3d;color:#6fb5ff}
+.ready{background:#193126;color:#5cf0a5}
+.cancelled{background:#3a1f1f;color:#ff7a7a}
+
+.meta{
+  margin:10px 0 16px;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.items{
+  background:#0f1420;
+  border-radius:14px;
+  padding:12px;
+  border:1px solid var(--line);
+  margin:10px 0 14px;
+  font-size:14px;
+}
+
+.items hr{
+  border:none;
+  border-top:1px solid var(--line);
   margin:10px 0;
 }
 
-.pending{color:#f1c40f}
-.accepted{color:#3498db}
-.ready{color:#2ecc71}
-.cancelled{color:#e74c3c}
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  color:var(--muted);
+  font-size:14px;
+}
 
-.items{
-  background:#111;
+.reply{
+  background:#142417;
+  color:#bfffd6;
+  padding:10px;
   border-radius:12px;
-  padding:12px;
-  margin:12px 0;
-  font-size:15px;
+  margin:12px 0 6px;
+  font-weight:600;
+  border:1px solid #21412b;
+}
+
+textarea{
+  width:100%;
+  border-radius:14px;
+  padding:10px;
+  border:1px solid var(--line);
+  background:#0f1420;
+  color:var(--text);
+  margin-top:10px;
+  font-size:14px;
 }
 
 button{
@@ -58,30 +134,23 @@ button{
   margin-top:10px;
   border:none;
   border-radius:22px;
-  font-size:16px;
+  font-size:15px;
   cursor:pointer;
+  font-weight:600;
 }
 
 .cancel{background:#e74c3c;color:#fff}
-.edit{background:#f39c12;color:#000}
-.send{background:#3498db;color:#fff}
+.edit{background:#ffb347;color:#0b0d12}
+.send{background:#4b8bff;color:#fff}
 
-textarea{
-  width:100%;
-  border-radius:14px;
-  padding:10px;
-  border:none;
-  margin-top:8px;
-  font-size:15px;
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
 }
 
-.reply{
-  background:#003300;
-  color:#9aff9a;
-  padding:10px;
-  border-radius:12px;
-  margin-top:10px;
-  font-weight:bold;
+@media (max-width:520px){
+  .actions{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -89,15 +158,13 @@ textarea{
 <body>
 
 <div class="card" id="box">
-  Loading order…
+  Loading order...
 </div>
 
 <script>
 const qs = new URLSearchParams(location.search);
 const id = qs.get("id");
 const apiParam = qs.get("api");
-
-// Use ?api=YOUR_BACKEND_URL if frontend and backend are different
 const API_BASE = apiParam ? decodeURIComponent(apiParam) : location.origin;
 
 const box = document.getElementById("box");
@@ -112,10 +179,8 @@ async function fetchOrder(){
     return null;
   }
 
-  // Try /order/:id first
   let res = await fetch(`${API_BASE}/order/${id}`).catch(()=>null);
   if(!res || !res.ok){
-    // Fallback: /order?id=
     res = await fetch(`${API_BASE}/order?id=${id}`).catch(()=>null);
   }
   if(!res || !res.ok){
@@ -132,7 +197,6 @@ async function fetchOrder(){
   return data;
 }
 
-/* LOAD STATUS */
 async function loadStatus(){
   const o = await fetchOrder();
   if(!o) return;
@@ -143,10 +207,10 @@ async function loadStatus(){
     statusText==="Pending" ? "pending" :
     statusText==="Accepted" ? "accepted" :
     statusText==="Ready" ? "ready" :
-    statusText==="Cancelled" ? "cancelled" : "";
+    statusText==="Cancelled" ? "cancelled" : "pending";
 
   const items = JSON.parse(o.items || "[]")
-    .map(i=>`${i.name} × ${i.qty}`)
+    .map(i=>`${i.name} x ${i.qty}`)
     .join("<br>");
 
   const canCancel =
@@ -154,12 +218,11 @@ async function loadStatus(){
     Date.now() < (o.can_modify_until || 0);
 
   box.innerHTML=`
-    <h2>Order #${o.id}</h2>
-
-    <div class="status ${statusClass}">
-      ${statusText}
+    <div class="title">
+      <h2>Order #${o.id}</h2>
+      <div class="pill ${statusClass}">${statusText}</div>
     </div>
-    <div>Date: ${o.date || "-"} | Time: ${o.time || "-"}</div>
+    <div class="meta">Date: ${o.date || "-"} | Time: ${o.time || "-"}</div>
 
     <div class="items">
       ${items || "No items"}
@@ -167,34 +230,27 @@ async function loadStatus(){
       <b>Total ₹${o.total || 0}</b>
     </div>
 
-    <div>👤 ${o.customer_name || "-"}</div>
-    <div>📞 ${o.customer_phone || "-"}</div>
+    <div class="row"><span>Name</span><span>${o.customer_name || "-"}</span></div>
+    <div class="row"><span>Phone</span><span>${o.customer_phone || "-"}</span></div>
 
     ${o.kitchen_reply ? `
       <div class="reply">
-        🍳 Kitchen: ${o.kitchen_reply}
+        Kitchen: ${o.kitchen_reply}
       </div>
     ` : ""}
 
     ${canCancel ? `
-      <button class="cancel" onclick="cancelOrder()">
-        ❌ Cancel Order
-      </button>
-      <button class="edit" onclick="editOrder()">
-        ✏️ Edit Order
-      </button>
+      <div class="actions">
+        <button class="cancel" onclick="cancelOrder()">Cancel Order</button>
+        <button class="edit" onclick="editOrder()">Edit Order</button>
+      </div>
     ` : ""}
 
-    <textarea id="complaint"
-      placeholder="Any issue or delay complaint?"></textarea>
-
-    <button class="send" onclick="sendComplaint()">
-      💬 Send Complaint
-    </button>
+    <textarea id="complaint" placeholder="Any issue or delay complaint?"></textarea>
+    <button class="send" onclick="sendComplaint()">Send Complaint</button>
   `;
 }
 
-/* CANCEL */
 function cancelOrder(){
   fetch(`${API_BASE}/order/cancel`,{
     method:"POST",
@@ -203,13 +259,11 @@ function cancelOrder(){
   }).then(loadStatus);
 }
 
-/* EDIT */
 function editOrder(){
   alert("Edit allowed before accept.\nPlease reorder from menu.");
   location.href = "/";
 }
 
-/* COMPLAINT */
 function sendComplaint(){
   const text=document.getElementById("complaint").value.trim();
   if(!text)return alert("Enter complaint");

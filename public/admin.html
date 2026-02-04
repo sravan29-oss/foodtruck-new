@@ -42,6 +42,7 @@ header{
 
 .refreshBtn{background:#3498db;color:#fff}
 .logoutBtn{background:#e74c3c;color:#fff}
+.debugBtn{background:#f39c12;color:#000}
 
 table{
   width:100%;
@@ -68,10 +69,10 @@ th{background:#1e1e1e}
 }
 
 .debug{
+  text-align:center;
   font-size:12px;
   color:#aaa;
-  text-align:center;
-  margin-bottom:10px;
+  margin:8px 0;
 }
 
 #loginBox{
@@ -119,6 +120,7 @@ th{background:#1e1e1e}
 
 <div class="actions" id="actions" style="display:none">
   <button class="refreshBtn" onclick="loadAdmin()">Refresh Now</button>
+  <button class="debugBtn" onclick="checkSession()">Check Session</button>
   <button class="logoutBtn" onclick="doLogout()">Logout</button>
 </div>
 
@@ -179,8 +181,8 @@ async function loadAdmin(){
     const r = await fetch("/admin/report",{credentials:"same-origin"});
     showDebug(`GET /admin/report → ${r.status}`);
     if(!r.ok) throw new Error("unauthorized");
-
     const data = await r.json();
+
     if(!Array.isArray(data)){
       showLogin(true);
       showReport(false);
@@ -265,6 +267,17 @@ function doLogout(){
       showLogin(true);
       showReport(false);
       showMsg("Logged out.");
+    });
+}
+
+function checkSession(){
+  fetch("/whoami",{credentials:"same-origin"})
+    .then(r=>r.json())
+    .then(d=>{
+      showDebug(`Session: ${JSON.stringify(d)}`);
+    })
+    .catch(()=>{
+      showDebug("Session check failed");
     });
 }
 

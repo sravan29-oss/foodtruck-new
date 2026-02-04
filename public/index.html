@@ -11,37 +11,44 @@
 <body>
 
 <header class="header">
-  🍴 Food Truck
+  <div class="app">
+    <div class="brand">
+      <h1>Food Truck</h1>
+      <div class="badge">Fresh Today</div>
+    </div>
+    <div class="hero">
+      <div>Fast, hot, and made to order.</div>
+      <p>Choose your favorites and pick how you pay.</p>
+    </div>
+  </div>
 </header>
 
-<section class="customer">
-  <input id="custName" placeholder="Your Name">
-  <input id="custPhone" placeholder="Phone Number" maxlength="10">
-</section>
+<main class="app">
+  <section class="customer">
+    <input id="custName" placeholder="Your Name">
+    <input id="custPhone" placeholder="Phone Number" maxlength="10">
+  </section>
 
-<!-- CATEGORY TABS (NO ALL TAB) -->
-<div class="tabs">
-  <button class="tab active" data-type="nonveg">🍗 Non-Veg</button>
-  <button class="tab" data-type="veg">🥦 Veg</button>
-  <button class="tab" data-type="snacks">🍟 Snacks</button>
-  <button class="tab" data-type="drinks">🥤 Drinks</button>
-</div>
+  <div class="tabs">
+    <button class="tab active" data-type="nonveg">Non-Veg</button>
+    <button class="tab" data-type="veg">Veg</button>
+    <button class="tab" data-type="snacks">Snacks</button>
+    <button class="tab" data-type="drinks">Drinks</button>
+  </div>
 
-<!-- MENU -->
-<div id="menu" class="menu"></div>
+  <div id="menu" class="menu"></div>
 
-<!-- PAYMENT (MANDATORY) -->
-<div class="payment">
-  <button id="cashBtn">💵 Cash</button>
-  <button id="upiBtn">📲 UPI</button>
-</div>
+  <div class="payment">
+    <button id="cashBtn">Cash</button>
+    <button id="upiBtn">UPI</button>
+  </div>
 
-<!-- TOTAL -->
-<div class="total">
-  Total ₹<span id="total">0</span>
-</div>
+  <div class="total">
+    Total ₹<span id="total">0</span>
+  </div>
 
-<button class="orderBtn" onclick="placeOrder()">Place Order</button>
+  <button class="orderBtn" onclick="placeOrder()">Place Order</button>
+</main>
 
 <script src="app.js"></script>
 </body>

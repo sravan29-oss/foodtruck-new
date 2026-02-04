@@ -1,8 +1,117 @@
 <!DOCTYPE html>
-<html>
-<body style="text-align:center;font-family:Arial">
-<h2>Scan & Pay</h2>
-<img src="images/upi_qr.png" width="250">
-<p>Complete payment and return</p>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UPI Payment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&display=swap");
+
+:root{
+  --bg:#0b0d12;
+  --card:#131826;
+  --text:#f5f7fb;
+  --muted:#aab4c6;
+  --accent:#ffb347;
+  --line:#212840;
+  --shadow:0 12px 30px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Inter, "Helvetica Neue", Arial, sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #243052 0%, rgba(36,48,82,0) 60%),
+    radial-gradient(900px 400px at 90% 0%, #2a1f3f 0%, rgba(42,31,63,0) 55%),
+    var(--bg);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+
+.card{
+  width:100%;
+  max-width:520px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:20px;
+  box-shadow:var(--shadow);
+  text-align:center;
+}
+
+h2{
+  margin:6px 0 8px;
+  font-family:Fraunces, serif;
+  font-size:26px;
+}
+
+p{
+  margin:6px 0;
+  color:var(--muted);
+}
+
+.qr{
+  margin:16px auto;
+  width:260px;
+  max-width:80%;
+  padding:12px;
+  border-radius:16px;
+  background:#0f1420;
+  border:1px solid var(--line);
+}
+
+.qr img{
+  width:100%;
+  border-radius:12px;
+}
+
+.steps{
+  margin:12px 0;
+  text-align:left;
+  font-size:14px;
+  color:var(--muted);
+}
+
+.steps li{
+  margin:6px 0;
+}
+
+.btn{
+  display:inline-block;
+  margin-top:12px;
+  padding:12px 20px;
+  border-radius:24px;
+  background:linear-gradient(135deg, #ffb347, #ffd66b);
+  color:#0b0d12;
+  font-weight:700;
+  text-decoration:none;
+}
+</style>
+</head>
+
+<body>
+  <div class="card">
+    <h2>Scan and Pay</h2>
+    <p>Use any UPI app to complete payment.</p>
+
+    <div class="qr">
+      <img src="images/upi_qr.png" alt="UPI QR Code">
+    </div>
+
+    <ul class="steps">
+      <li>Open your UPI app (PhonePe, GPay, Paytm).</li>
+      <li>Scan the QR code and pay the exact amount.</li>
+      <li>Return to the order screen after payment.</li>
+    </ul>
+
+    <a class="btn" href="/">Back to Menu</a>
+  </div>
 </body>
 </html>

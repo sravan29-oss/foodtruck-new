@@ -7,6 +7,7 @@
     "postinstall": "npm rebuild sqlite3--build-from-source"
   },
   "dependencies": {
+    "connect-sqlite3": "^0.9.16",
     "express": "^4.19.2",
     "express-session": "^1.17.3",
     "sqlite3": "^5.1.7"

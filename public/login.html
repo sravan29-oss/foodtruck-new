@@ -1,44 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Staff Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
+body{
   background:#111;
   color:#fff;
-  font-family:Arial;
+  font-family:Arial,sans-serif;
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
 }
-
-.box {
+.card{
   background:#1e1e1e;
   padding:30px;
   border-radius:16px;
-  width:320px;
-  text-align:center;
+  width:90%;
+  max-width:320px;
 }
-
-input {
+input,button{
   width:100%;
-  padding:10px;
-  margin:10px 0;
+  margin-top:12px;
+  padding:12px;
   border-radius:8px;
   border:none;
-}
-
-button {
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:25px;
-  background:#2ecc71;
   font-size:16px;
+}
+button{
+  background:#2ecc71;
+  color:#000;
   cursor:pointer;
 }
 </style>
@@ -46,37 +40,50 @@ button {
 
 <body>
 
-<div class="box">
-  <h2>🔐 Staff Login</h2>
+<div class="card">
+  <h2>Staff Login</h2>
 
-  <input id="user" placeholder="Username">
-  <input id="pass" type="password" placeholder="Password">
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
 
-  <button onclick="login()">Login</button>
+  <!-- IMPORTANT: type="button" -->
+  <button type="button" onclick="login()">Login</button>
+
+  <p id="msg" style="color:#e74c3c"></p>
 </div>
 
 <script>
-function login() {
+function login(){
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if(!username || !password){
+    document.getElementById("msg").innerText = "Enter username & password";
+    return;
+  }
+
   fetch("/login", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      username: user.value,
-      password: pass.value
-    })
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",   // 🔥 REQUIRED
+    body: JSON.stringify({ username, password })
   })
-  .then(r=>r.json())
-  .then(d=>{
-    if(!d.success) {
-      alert("Invalid login");
+  .then(r => r.json())
+  .then(d => {
+    if(!d.success){
+      document.getElementById("msg").innerText = "Invalid login";
       return;
     }
 
-    if(d.role==="admin") {
-      location.href="/admin.html";
-    } else {
-      location.href="/kitchen.html";
+    if(d.role === "admin"){
+      location.href = "/admin.html";
+    }else{
+      location.href = "/kitchen.html";
     }
+  })
+  .catch(err => {
+    console.error(err);
+    document.getElementById("msg").innerText = "Server error";
   });
 }
 </script>

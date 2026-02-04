@@ -6,108 +6,69 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-:root{
-  --card:#111;
-  --pending:#f39c12;
-  --accepted:#3498db;
-  --ready:#2ecc71;
-  --danger:#e74c3c;
-}
-
 body{
   margin:0;
-  font-family:Segoe UI,Arial,sans-serif;
-  background:radial-gradient(circle at top,#111,#000);
+  font-family:Segoe UI,Arial;
+  background:#0f0f0f;
   color:#fff;
 }
 
 header{
-  background:#0c0c0c;
-  padding:18px 26px;
-  font-size:28px;
-  font-weight:bold;
+  background:#111;
+  padding:16px;
+  font-size:26px;
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
 
-header button{
-  background:#222;
-  color:#fff;
-  border:none;
+button{
+  padding:8px 14px;
   border-radius:20px;
-  padding:8px 16px;
-  font-size:16px;
+  border:none;
   cursor:pointer;
+  font-size:14px;
 }
+
+.logout{background:#e74c3c;color:#fff}
 
 #orders{
-  height:calc(100vh - 90px);
-  overflow-y:auto;
-  padding:24px;
+  padding:16px;
 }
 
-.placeholder{
-  text-align:center;
-  font-size:26px;
-  opacity:.6;
-  margin-top:20vh;
-}
-
-.order{
-  background:var(--card);
-  border-left:10px solid var(--pending);
-  border-radius:18px;
-  padding:20px;
-  margin-bottom:24px;
-  animation:fadeIn .25s ease;
-}
-
-.order.accepted{border-left-color:var(--accepted)}
-.order.ready{border-left-color:var(--ready)}
-.order.cancelled{border-left-color:var(--danger);opacity:.6}
-.order.delayed{
-  border-left-color:var(--danger);
-  box-shadow:0 0 30px rgba(231,76,60,.9);
-  animation:pulse 1.4s infinite;
-}
-
-@keyframes pulse{
-  0%{box-shadow:0 0 10px rgba(231,76,60,.4)}
-  100%{box-shadow:0 0 30px rgba(231,76,60,1)}
-}
-
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:translateY(0)}
-}
-
-.badge{
-  font-size:14px;
-  padding:6px 14px;
+.card{
+  background:#1e1e1e;
+  border-left:8px solid #f39c12;
   border-radius:16px;
+  padding:16px;
+  margin-bottom:18px;
+  animation:fade .3s ease;
 }
-.paid{background:var(--ready);color:#000}
-.unpaid{background:var(--danger)}
 
-.items{margin:12px 0;line-height:1.6}
+@keyframes fade{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1}
+}
+
+.accepted{border-left-color:#3498db}
+.ready{border-left-color:#2ecc71}
+.cancelled{border-left-color:#e74c3c;opacity:.6}
+
+.items{margin:10px 0}
 
 .actions button{
   margin-top:10px;
-  padding:8px 16px;
-  font-size:15px;
-  border-radius:20px;
-  border:none;
-  cursor:pointer;
+  width:48%;
 }
-.accept{background:var(--accepted);color:#fff}
-.readyBtn{background:var(--ready);color:#000;margin-left:10px}
+
+.accept{background:#3498db;color:#fff}
+.readyBtn{background:#2ecc71;color:#000}
 
 .complaint{
-  margin-top:12px;
-  padding:12px;
+  margin-top:10px;
   background:#2c0000;
-  border-left:6px solid var(--danger);
+  padding:10px;
+  border-radius:10px;
   color:#ffb3b3;
 }
 
@@ -115,175 +76,94 @@ textarea{
   width:100%;
   margin-top:8px;
   padding:8px;
-  border-radius:8px;
+  border-radius:10px;
   border:none;
 }
-
-.replyBtn{
-  margin-top:6px;
-  background:#3498db;
-  color:#fff;
-  border:none;
-  padding:6px 12px;
-  border-radius:14px;
-  cursor:pointer;
-}
-
-.eta.warn{color:#f1c40f}
-.eta.danger{color:#e74c3c;font-weight:bold}
 </style>
 </head>
 
 <body>
 
 <header>
-  🍳 Kitchen Live Orders
-  <div>
-    <button onclick="toggleLang()">🔊 <span id="lang">EN</span></button>
-    <button onclick="logout()">Logout</button>
-  </div>
+  🍳 Kitchen Dashboard
+  <button class="logout" onclick="logout()">Logout</button>
 </header>
 
-<div id="orders">
-  <div class="placeholder" id="empty">No orders yet 🍽</div>
-</div>
-
-<audio id="newSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-<audio id="acceptSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-<audio id="readySound" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg"></audio>
+<div id="orders">Loading orders…</div>
 
 <script>
-const ordersBox = document.getElementById("orders");
-const empty = document.getElementById("empty");
-
-const newSound = document.getElementById("newSound");
-const acceptSound = document.getElementById("acceptSound");
-const readySound = document.getElementById("readySound");
-
-let knownStatus = {};
-let lang = "EN";
+const API = location.origin;
+const box = document.getElementById("orders");
+let known = {};
 
 function logout(){
   fetch("/logout",{method:"POST"}).then(()=>location.href="/login.html");
 }
 
-function toggleLang(){
-  lang = lang==="EN"?"TE":"EN";
-  document.getElementById("lang").innerText = lang;
-}
+function loadOrders(){
+  fetch("/orders",{credentials:"same-origin"})
+    .then(r=>r.json())
+    .then(list=>{
+      box.innerHTML="";
+      if(!list.length){
+        box.innerHTML="<h3>No orders yet</h3>";
+        return;
+      }
 
-function speak(en,te){
-  if(!("speechSynthesis" in window))return;
-  speechSynthesis.speak(
-    new SpeechSynthesisUtterance(lang==="EN"?en:te)
-  );
-}
+      list.forEach(o=>{
+        const div=document.createElement("div");
 
-function getItems(order){
-  try{
-    const p = JSON.parse(order.items);
-    return Array.isArray(p)?p:Object.values(p);
-  }catch{return [];}
-}
+        div.className=
+          "card "+
+          (o.status==="Accepted"?"accepted ":"")+
+          (o.status==="Ready"?"ready ":"")+
+          (o.cancelled?"cancelled":"");
 
-function calcETA(order){
-  return 8 + getItems(order).reduce((s,i)=>s+i.qty,0)*2;
-}
+        const items=JSON.parse(o.items||"[]")
+          .map(i=>`${i.name} × ${i.qty}`).join("<br>");
 
-function isDelayed(order){
-  return Date.now() - new Date(order.date+" "+order.time).getTime()
-    > calcETA(order)*60000;
-}
+        div.innerHTML=`
+          <h3>Table ${o.table_no}</h3>
+          <div class="items">${items}</div>
+          <div>Total ₹${o.total}</div>
+          <div>Status: <b>${o.status}</b></div>
 
-async function loadOrders(){
-  const res = await fetch("/orders",{credentials:"same-origin"});
-  const orders = await res.json();
+          ${o.complaint ? `
+            <div class="complaint">
+              💬 ${o.complaint}
+              <textarea id="r${o.id}" placeholder="Reply to customer"></textarea>
+              <button onclick="reply(${o.id})">Reply</button>
+            </div>`:""}
 
-  ordersBox.innerHTML="";
-  if(!orders.length){
-    ordersBox.appendChild(empty);
-    return;
-  }
+          <div class="actions">
+            ${o.status==="Pending" && !o.cancelled
+              ? `<button class="accept" onclick="setStatus(${o.id},'Accepted')">Accept</button>`:""}
+            ${o.status==="Accepted"
+              ? `<button class="readyBtn" onclick="setStatus(${o.id},'Ready')">Ready</button>`:""}
+          </div>
+        `;
 
-  orders.forEach(order=>{
-    const delayed=isDelayed(order);
-    const div=document.createElement("div");
-
-    div.className="order "+
-      (order.status==="Accepted"?"accepted ":"")+
-      (order.status==="Ready"?"ready ":"")+
-      (order.cancelled?"cancelled ":"")+
-      (delayed?"delayed":"");
-
-    div.innerHTML=`
-      <h3>
-        Table ${order.table_no}
-        <span class="badge ${order.payment==='UPI'?'paid':'unpaid'}">
-          ${order.payment}
-        </span>
-      </h3>
-
-      <div class="items">
-        ${getItems(order).map(i=>`${i.name} × ${i.qty}`).join("<br>")}
-      </div>
-
-      <div>👤 ${order.customer_name||"Guest"}</div>
-      <div>📞 ${order.customer_phone||"-"}</div>
-      <div>🕒 ${order.date} ${order.time}</div>
-      <div>Total ₹${order.total}</div>
-
-      <div class="eta ${delayed?'danger':'warn'}">
-        ETA ~${calcETA(order)} min ${delayed?'⏰ DELAYED':''}
-      </div>
-
-      ${order.complaint?`
-        <div class="complaint">
-          💬 ${order.complaint}
-          <textarea id="reply-${order.id}" placeholder="Reply to customer"></textarea>
-          <button class="replyBtn" onclick="sendReply(${order.id})">Reply</button>
-        </div>`:""}
-
-      <div class="actions">
-        ${order.status==="Pending" && !order.cancelled
-          ? `<button class="accept" onclick="setStatus(${order.id},'Accepted')">Accept</button>`:""}
-        ${order.status!=="Ready" && !order.cancelled
-          ? `<button class="readyBtn" onclick="setStatus(${order.id},'Ready')">Ready</button>`:""}
-      </div>
-    `;
-
-    ordersBox.appendChild(div);
-
-    if(!knownStatus[order.id]){
-      knownStatus[order.id]=order.status;
-      newSound.play();
-      speak(`New order from table ${order.table_no}`,
-            `టేబుల్ ${order.table_no} నుండి కొత్త ఆర్డర్`);
-    }else if(knownStatus[order.id]!==order.status){
-      knownStatus[order.id]=order.status;
-      if(order.status==="Accepted"){acceptSound.play();}
-      if(order.status==="Ready"){readySound.play();}
-    }
-  });
+        box.appendChild(div);
+      });
+    });
 }
 
 function setStatus(id,status){
   fetch("/order/status",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
+    headers:{"Content-Type":"application/json"},
     body:JSON.stringify({id,status})
   }).then(loadOrders);
 }
 
-function sendReply(id){
-  const el=document.getElementById("reply-"+id);
-  if(!el||!el.value.trim()) return;
-
+function reply(id){
+  const text=document.getElementById("r"+id).value;
+  if(!text)return;
   fetch("/order/reply",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    credentials:"same-origin",
-    body:JSON.stringify({id,reply:el.value})
-  }).then(()=>{el.value="";loadOrders();});
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({id,reply:text})
+  }).then(loadOrders);
 }
 
 loadOrders();

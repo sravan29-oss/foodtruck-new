@@ -1,168 +1,114 @@
-/* ================= API BASE (FINAL FIX) ================= */
 const API_BASE = location.origin;
-console.log("API_BASE =", API_BASE);
 
-/* ================= LANGUAGE ================= */
-let lang = "EN";
-
-const TEXT = {
-  EN: {
-    total: "Total",
-    placeOrder: "Place Order",
-    cash: "CASH",
-    upi: "UPI"
-  },
-  TE: {
-    total: "మొత్తం",
-    placeOrder: "ఆర్డర్ పెట్టండి",
-    cash: "నగదు",
-    upi: "యూపీఐ"
-  }
-};
-
-function toggleLang() {
-  lang = lang === "EN" ? "TE" : "EN";
-  applyLang();
-}
-
-function applyLang() {
-  document.getElementById("totalLabel").innerText = TEXT[lang].total;
-  document.getElementById("orderBtn").innerText = TEXT[lang].placeOrder;
-  document.getElementById("cashBtn").innerText = TEXT[lang].cash;
-  document.getElementById("upiBtn").innerText = TEXT[lang].upi;
-}
-
-console.log("✅ app.js loaded");
-
-/* ================= GLOBALS ================= */
 let cart = {};
-let paymentMethod = "Cash";
 let totalAmount = 0;
+let paymentMethod = "";
 
-const TABLE_NO =
-  new URLSearchParams(location.search).get("table") || 1;
-
-/* ================= MENU DATA ================= */
+/* MENU (UNCHANGED AS YOU ASKED) */
 const menuItems = [
-  { name: "Telangana Chicken Fry", price: 150, category: "nonveg", img: "chicken_fry.jpg" },
-  { name: "Boti Fry", price: 180, category: "nonveg", img: "boti_fry.jpg" },
-  { name: "Chicken Curry", price: 160, category: "nonveg", img: "chicken_curry.jpg" },
-  { name: "Dum Biriyani", price: 200, category: "nonveg", img: "dum_biriyani.jpg" },
-  { name: "Fry Piece Biriyani", price: 220, category: "nonveg", img: "fry_piece_biriyani.jpg" },
-  { name: "Mutton Biriyani", price: 260, category: "nonveg", img: "mutton_biriyani.jpg" },
+  {name:"Telangana Chicken Fry",price:150,category:"nonveg",img:"chicken_fry.jpg"},
+  {name:"Boti Fry",price:180,category:"nonveg",img:"boti_fry.jpg"},
+  {name:"Chicken Curry",price:160,category:"nonveg",img:"chicken_curry.jpg"},
+  {name:"Dum Biriyani",price:200,category:"nonveg",img:"dum_biriyani.jpg"},
+  {name:"Fry Piece Biriyani",price:220,category:"nonveg",img:"fry_piece_biriyani.jpg"},
+  {name:"Mutton Biriyani",price:260,category:"nonveg",img:"mutton_biriyani.jpg"},
 
-  { name: "Paneer Curry", price: 140, category: "veg", img: "paneer.jpg" },
-  { name: "Dal Rice", price: 120, category: "veg", img: "dal_rice.jpg" },
-  { name: "Veg Curry", price: 130, category: "veg", img: "veg_curry.jpg" },
+  {name:"Paneer Curry",price:140,category:"veg",img:"paneer.jpg"},
+  {name:"Dal Rice",price:120,category:"veg",img:"dal_rice.jpg"},
+  {name:"Veg Curry",price:130,category:"veg",img:"veg_curry.jpg"},
 
-  { name: "Samosa", price: 20, category: "snacks", img: "samosa.jpg" },
-  { name: "Veg Puff", price: 25, category: "snacks", img: "veg_puff.jpg" },
-  { name: "Chicken Puff", price: 30, category: "snacks", img: "chicken_puff.jpg" },
+  {name:"Samosa",price:20,category:"snacks",img:"samosa.jpg"},
+  {name:"Veg Puff",price:25,category:"snacks",img:"veg_puff.jpg"},
+  {name:"Chicken Puff",price:30,category:"snacks",img:"chicken_puff.jpg"},
 
-  { name: "Tea", price: 15, category: "drinks", img: "tea.jpg" },
-  { name: "Coffee", price: 25, category: "drinks", img: "coffee.jpg" },
-  { name: "Cool Drink", price: 25, category: "drinks", img: "cooldrink.jpg" }
+  {name:"Tea",price:15,category:"drinks",img:"tea.jpg"},
+  {name:"Coffee",price:25,category:"drinks",img:"coffee.jpg"},
+  {name:"Cool Drink",price:25,category:"drinks",img:"cooldrink.jpg"}
 ];
 
-/* ================= RENDER MENU ================= */
-function renderMenu(filter = "all") {
-  const menu = document.getElementById("menu");
-  menu.innerHTML = "";
-
-  menuItems
-    .filter(i => filter === "all" || i.category === filter)
-    .forEach(item => {
-      const qty = cart[item.name]?.qty || 0;
-
-      const div = document.createElement("div");
-      div.className = "item";
-
-      div.innerHTML = `
-        <img src="/images/${item.img}">
-        <h4>${item.name}</h4>
-        <p>₹${item.price}</p>
+/* RENDER MENU */
+function renderMenu(type){
+  const menu=document.getElementById("menu");
+  menu.innerHTML="";
+  menuItems.filter(i=>i.category===type).forEach(i=>{
+    const q=cart[i.name]?.qty||0;
+    menu.innerHTML+=`
+      <div class="item">
+        <img src="/images/${i.img}">
+        <h4>${i.name}</h4>
+        <p>₹${i.price}</p>
         <div class="qty">
-          <button onclick="updateQty('${item.name}', -1)">−</button>
-          <span>${qty}</span>
-          <button onclick="updateQty('${item.name}', 1)">+</button>
+          <button onclick="updateQty('${i.name}',-1)">−</button>
+          <span>${q}</span>
+          <button onclick="updateQty('${i.name}',1)">+</button>
         </div>
-      `;
-
-      menu.appendChild(div);
-    });
-}
-
-renderMenu();
-
-/* ================= CART ================= */
-function updateQty(name, change) {
-  if (!cart[name]) {
-    const item = menuItems.find(i => i.name === name);
-    cart[name] = { ...item, qty: 0 };
-  }
-
-  cart[name].qty += change;
-  if (cart[name].qty <= 0) delete cart[name];
-
-  updateTotal();
-  renderMenu(
-    document.querySelector(".tab.active")?.dataset.type || "all"
-  );
-}
-
-function updateTotal() {
-  totalAmount = 0;
-  Object.values(cart).forEach(i => {
-    totalAmount += i.price * i.qty;
+      </div>`;
   });
-  document.getElementById("total").innerText = totalAmount;
+}
+renderMenu("nonveg");
+
+/* TAB SHIFT FIX */
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    renderMenu(tab.dataset.type);
+  };
+});
+
+/* CART */
+function updateQty(name,change){
+  const item=menuItems.find(i=>i.name===name);
+  cart[name]??={...item,qty:0};
+  cart[name].qty+=change;
+  if(cart[name].qty<=0)delete cart[name];
+  updateTotal();
 }
 
-/* ================= PAYMENT ================= */
-function selectPayment(type) {
-  paymentMethod = type;
-  document.getElementById("cashBtn").classList.toggle("active", type === "Cash");
-  document.getElementById("upiBtn").classList.toggle("active", type === "UPI");
+function updateTotal(){
+  totalAmount=0;
+  Object.values(cart).forEach(i=>totalAmount+=i.price*i.qty);
+  document.getElementById("total").innerText=totalAmount;
 }
 
-/* ================= PLACE ORDER (FINAL FIX) ================= */
-function placeOrder() {
-  const name = document.getElementById("custName").value.trim();
-  const phone = document.getElementById("custPhone").value.trim();
+/* PAYMENT FIX */
+cashBtn.onclick=()=>selectPayment("Cash");
+upiBtn.onclick=()=>selectPayment("UPI");
 
-  if (!name || phone.length !== 10) {
-    alert("Enter valid name & phone");
-    return;
-  }
+function selectPayment(type){
+  paymentMethod=type;
+  cashBtn.classList.toggle("active",type==="Cash");
+  upiBtn.classList.toggle("active",type==="UPI");
+}
 
-  const itemsArray = Object.values(cart);
-  if (!itemsArray.length) {
-    alert("Select items");
-    return;
-  }
+/* PLACE ORDER (STRICT VALIDATION) */
+function placeOrder(){
+  const name=custName.value.trim();
+  const phone=custPhone.value.trim();
 
-  fetch(`${API_BASE}/order`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      table: TABLE_NO,
-      name,
-      phone,
-      items: itemsArray,
-      total: totalAmount,
-      payment: paymentMethod
+  if(!name) return alert("Enter your name");
+  if(phone.length!==10) return alert("Enter valid phone");
+  if(!Object.keys(cart).length) return alert("Select food items");
+  if(!paymentMethod) return alert("Select Cash or UPI");
+
+  fetch(`${API_BASE}/order`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      table:1,
+      name,phone,
+      items:Object.values(cart),
+      total:totalAmount,
+      payment:paymentMethod
     })
   })
-    .then(r => r.json())
-    .then(d => {
-      if (d.success) {
-        location.href = `/order-status.html?id=${d.orderId}`;
-      } else {
-        alert("Order failed");
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Network error");
-    });
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.success){
+      location.href=`/order-status.html?id=${d.orderId}`;
+    }else{
+      alert("Order failed");
+    }
+  })
+  .catch(()=>alert("Network error"));
 }

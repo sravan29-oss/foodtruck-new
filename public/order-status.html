@@ -97,45 +97,72 @@ const API_BASE = location.origin;
 const id = new URLSearchParams(location.search).get("id");
 const box = document.getElementById("box");
 
+function renderError(msg){
+  box.innerHTML = `<h3 style="text-align:center">${msg}</h3>`;
+}
+
+function safeJson(text){
+  try{ return JSON.parse(text); }catch{ return null; }
+}
+
 /* LOAD STATUS */
 function loadStatus(){
+  if(!id){
+    renderError("Order ID missing");
+    return;
+  }
+
   fetch(`${API_BASE}/order/${id}`)
-    .then(r=>r.json())
+    .then(async r=>{
+      const text = await r.text();
+      const data = safeJson(text);
+
+      if(!r.ok){
+        const msg = data?.error || "Server error";
+        renderError(`Error: ${msg}`);
+        return null;
+      }
+      return data;
+    })
     .then(o=>{
+      if(!o) return;
       if(!o.id){
-        box.innerHTML="Order not found";
+        renderError("Order not found");
         return;
       }
 
+      const statusText = o.status || "Pending";
+
       let statusClass =
-        o.status==="Pending" ? "pending" :
-        o.status==="Accepted" ? "accepted" :
-        o.status==="Ready" ? "ready" :
-        o.status==="Cancelled" ? "cancelled" : "";
+        statusText==="Pending" ? "pending" :
+        statusText==="Accepted" ? "accepted" :
+        statusText==="Ready" ? "ready" :
+        statusText==="Cancelled" ? "cancelled" : "";
 
       const items = JSON.parse(o.items || "[]")
         .map(i=>`${i.name} × ${i.qty}`)
         .join("<br>");
 
       const canCancel =
-        o.status==="Pending" &&
-        Date.now() < o.can_modify_until;
+        statusText==="Pending" &&
+        Date.now() < (o.can_modify_until || 0);
 
       box.innerHTML=`
         <h2>Order #${o.id}</h2>
 
         <div class="status ${statusClass}">
-          ${o.status}
+          ${statusText}
         </div>
+        <div>Date: ${o.date || "-"} | Time: ${o.time || "-"}</div>
 
         <div class="items">
-          ${items}
+          ${items || "No items"}
           <hr>
-          <b>Total ₹${o.total}</b>
+          <b>Total ₹${o.total || 0}</b>
         </div>
 
-        <div>👤 ${o.customer_name}</div>
-        <div>📞 ${o.customer_phone}</div>
+        <div>👤 ${o.customer_name || "-"}</div>
+        <div>📞 ${o.customer_phone || "-"}</div>
 
         ${o.kitchen_reply ? `
           <div class="reply">
@@ -159,6 +186,9 @@ function loadStatus(){
           💬 Send Complaint
         </button>
       `;
+    })
+    .catch(()=>{
+      renderError("Server error. Please try again.");
     });
 }
 

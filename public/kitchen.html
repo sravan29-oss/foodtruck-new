@@ -55,6 +55,11 @@ button{
 .cancelled{border-left-color:#e74c3c;opacity:.6}
 
 .items{margin:10px 0}
+.meta{
+  font-size:13px;
+  opacity:.8;
+  margin-top:6px;
+}
 
 .actions button{
   margin-top:10px;
@@ -92,17 +97,19 @@ textarea{
 <div id="orders">Loading orders…</div>
 
 <script>
-const API = location.origin;
 const box = document.getElementById("orders");
-let known = {};
 
 function logout(){
-  fetch("/logout",{method:"POST"}).then(()=>location.href="/login.html");
+  fetch("/logout",{method:"POST",credentials:"same-origin"})
+    .then(()=>location.href="/login.html");
 }
 
 function loadOrders(){
   fetch("/orders",{credentials:"same-origin"})
-    .then(r=>r.json())
+    .then(r=>{
+      if(!r.ok) throw new Error("unauthorized");
+      return r.json();
+    })
     .then(list=>{
       box.innerHTML="";
       if(!list.length){
@@ -124,6 +131,7 @@ function loadOrders(){
 
         div.innerHTML=`
           <h3>Table ${o.table_no}</h3>
+          <div class="meta">Date: ${o.date || "-"} | Time: ${o.time || "-"}</div>
           <div class="items">${items}</div>
           <div>Total ₹${o.total}</div>
           <div>Status: <b>${o.status}</b></div>
@@ -145,6 +153,14 @@ function loadOrders(){
 
         box.appendChild(div);
       });
+    })
+    .catch(err=>{
+      if(err.message==="unauthorized"){
+        box.innerHTML="<h3>Login required. Please login again.</h3>";
+        setTimeout(()=>location.href="/login.html",1200);
+      }else{
+        box.innerHTML="<h3>Server error. Please refresh.</h3>";
+      }
     });
 }
 
@@ -152,6 +168,7 @@ function setStatus(id,status){
   fetch("/order/status",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
+    credentials:"same-origin",
     body:JSON.stringify({id,status})
   }).then(loadOrders);
 }
@@ -162,6 +179,7 @@ function reply(id){
   fetch("/order/reply",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
+    credentials:"same-origin",
     body:JSON.stringify({id,reply:text})
   }).then(loadOrders);
 }

@@ -93,103 +93,105 @@ textarea{
 </div>
 
 <script>
-const API_BASE = location.origin;
-const id = new URLSearchParams(location.search).get("id");
+const qs = new URLSearchParams(location.search);
+const id = qs.get("id");
+const apiParam = qs.get("api");
+
+// Use ?api=YOUR_BACKEND_URL if frontend and backend are different
+const API_BASE = apiParam ? decodeURIComponent(apiParam) : location.origin;
+
 const box = document.getElementById("box");
 
 function renderError(msg){
   box.innerHTML = `<h3 style="text-align:center">${msg}</h3>`;
 }
 
-function safeJson(text){
-  try{ return JSON.parse(text); }catch{ return null; }
+async function fetchOrder(){
+  if(!id){
+    renderError("Order ID missing");
+    return null;
+  }
+
+  // Try /order/:id first
+  let res = await fetch(`${API_BASE}/order/${id}`).catch(()=>null);
+  if(!res || !res.ok){
+    // Fallback: /order?id=
+    res = await fetch(`${API_BASE}/order?id=${id}`).catch(()=>null);
+  }
+  if(!res || !res.ok){
+    renderError("Order not found or server not reachable");
+    return null;
+  }
+
+  const data = await res.json().catch(()=>null);
+  if(!data || !data.id){
+    renderError("Invalid order data");
+    return null;
+  }
+
+  return data;
 }
 
 /* LOAD STATUS */
-function loadStatus(){
-  if(!id){
-    renderError("Order ID missing");
-    return;
-  }
+async function loadStatus(){
+  const o = await fetchOrder();
+  if(!o) return;
 
-  fetch(`${API_BASE}/order/${id}`)
-    .then(async r=>{
-      const text = await r.text();
-      const data = safeJson(text);
+  const statusText = o.status || "Pending";
 
-      if(!r.ok){
-        const msg = data?.error || "Server error";
-        renderError(`Error: ${msg}`);
-        return null;
-      }
-      return data;
-    })
-    .then(o=>{
-      if(!o) return;
-      if(!o.id){
-        renderError("Order not found");
-        return;
-      }
+  let statusClass =
+    statusText==="Pending" ? "pending" :
+    statusText==="Accepted" ? "accepted" :
+    statusText==="Ready" ? "ready" :
+    statusText==="Cancelled" ? "cancelled" : "";
 
-      const statusText = o.status || "Pending";
+  const items = JSON.parse(o.items || "[]")
+    .map(i=>`${i.name} × ${i.qty}`)
+    .join("<br>");
 
-      let statusClass =
-        statusText==="Pending" ? "pending" :
-        statusText==="Accepted" ? "accepted" :
-        statusText==="Ready" ? "ready" :
-        statusText==="Cancelled" ? "cancelled" : "";
+  const canCancel =
+    statusText==="Pending" &&
+    Date.now() < (o.can_modify_until || 0);
 
-      const items = JSON.parse(o.items || "[]")
-        .map(i=>`${i.name} × ${i.qty}`)
-        .join("<br>");
+  box.innerHTML=`
+    <h2>Order #${o.id}</h2>
 
-      const canCancel =
-        statusText==="Pending" &&
-        Date.now() < (o.can_modify_until || 0);
+    <div class="status ${statusClass}">
+      ${statusText}
+    </div>
+    <div>Date: ${o.date || "-"} | Time: ${o.time || "-"}</div>
 
-      box.innerHTML=`
-        <h2>Order #${o.id}</h2>
+    <div class="items">
+      ${items || "No items"}
+      <hr>
+      <b>Total ₹${o.total || 0}</b>
+    </div>
 
-        <div class="status ${statusClass}">
-          ${statusText}
-        </div>
-        <div>Date: ${o.date || "-"} | Time: ${o.time || "-"}</div>
+    <div>👤 ${o.customer_name || "-"}</div>
+    <div>📞 ${o.customer_phone || "-"}</div>
 
-        <div class="items">
-          ${items || "No items"}
-          <hr>
-          <b>Total ₹${o.total || 0}</b>
-        </div>
+    ${o.kitchen_reply ? `
+      <div class="reply">
+        🍳 Kitchen: ${o.kitchen_reply}
+      </div>
+    ` : ""}
 
-        <div>👤 ${o.customer_name || "-"}</div>
-        <div>📞 ${o.customer_phone || "-"}</div>
+    ${canCancel ? `
+      <button class="cancel" onclick="cancelOrder()">
+        ❌ Cancel Order
+      </button>
+      <button class="edit" onclick="editOrder()">
+        ✏️ Edit Order
+      </button>
+    ` : ""}
 
-        ${o.kitchen_reply ? `
-          <div class="reply">
-            🍳 Kitchen: ${o.kitchen_reply}
-          </div>
-        ` : ""}
+    <textarea id="complaint"
+      placeholder="Any issue or delay complaint?"></textarea>
 
-        ${canCancel ? `
-          <button class="cancel" onclick="cancelOrder()">
-            ❌ Cancel Order
-          </button>
-          <button class="edit" onclick="editOrder()">
-            ✏️ Edit Order
-          </button>
-        ` : ""}
-
-        <textarea id="complaint"
-          placeholder="Any issue or delay complaint?"></textarea>
-
-        <button class="send" onclick="sendComplaint()">
-          💬 Send Complaint
-        </button>
-      `;
-    })
-    .catch(()=>{
-      renderError("Server error. Please try again.");
-    });
+    <button class="send" onclick="sendComplaint()">
+      💬 Send Complaint
+    </button>
+  `;
 }
 
 /* CANCEL */

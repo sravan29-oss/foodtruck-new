@@ -262,6 +262,15 @@ app.get("/admin/report", (req, res) => {
     (e, rows) => res.json(rows || [])
   );
 });
+/* ========= DIAGNOSTICS ========= */
+app.get("/health", (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
+app.get("/whoami", (req, res) => {
+  res.json({ session: req.session.user || null });
+});
+
 
 /* ========= START ========= */
 app.listen(PORT, () => {

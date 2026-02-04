@@ -27,6 +27,22 @@ header{
   font-size:18px;
 }
 
+.actions{
+  text-align:center;
+  margin-bottom:10px;
+}
+
+.actions button{
+  padding:8px 16px;
+  border:none;
+  border-radius:20px;
+  cursor:pointer;
+  margin:0 6px;
+}
+
+.refreshBtn{background:#3498db;color:#fff}
+.logoutBtn{background:#e74c3c;color:#fff}
+
 table{
   width:100%;
   border-collapse:collapse;
@@ -44,6 +60,42 @@ th{background:#1e1e1e}
 .unpaid{color:#e74c3c}
 
 .complaint{color:#f1c40f;font-size:14px}
+
+.msg{
+  text-align:center;
+  margin:16px 0;
+  color:#f1c40f;
+}
+
+.debug{
+  font-size:12px;
+  color:#aaa;
+  text-align:center;
+  margin-bottom:10px;
+}
+
+#loginBox{
+  max-width:320px;
+  margin:20px auto;
+  background:#1e1e1e;
+  padding:16px;
+  border-radius:12px;
+}
+
+#loginBox input, #loginBox button{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  border:none;
+  border-radius:8px;
+  font-size:15px;
+}
+
+#loginBox button{
+  background:#2ecc71;
+  color:#000;
+  cursor:pointer;
+}
 </style>
 </head>
 
@@ -51,13 +103,29 @@ th{background:#1e1e1e}
 
 <header>📊 Admin Dashboard</header>
 
-<div class="summary">
+<div id="loginBox" style="display:none">
+  <h3 style="text-align:center;margin:6px 0">Admin Login</h3>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
+  <button type="button" onclick="doLogin()">Login</button>
+  <div id="loginMsg" class="msg"></div>
+</div>
+
+<div class="summary" id="summary" style="display:none">
   <div>Total Orders: <span id="count">0</span></div>
   <div>UPI ₹<span id="upi">0</span></div>
   <div>Cash ₹<span id="cash">0</span></div>
 </div>
 
-<table>
+<div class="actions" id="actions" style="display:none">
+  <button class="refreshBtn" onclick="loadAdmin()">Refresh Now</button>
+  <button class="logoutBtn" onclick="doLogout()">Logout</button>
+</div>
+
+<div id="msg" class="msg"></div>
+<div id="debug" class="debug"></div>
+
+<table id="reportTable" style="display:none">
 <thead>
 <tr>
   <th>ID</th>
@@ -74,14 +142,55 @@ th{background:#1e1e1e}
 </table>
 
 <script>
-fetch("/admin/report",{credentials:"same-origin"})
-  .then(r=>r.json())
-  .then(data=>{
+const msg = document.getElementById("msg");
+const debug = document.getElementById("debug");
+const loginBox = document.getElementById("loginBox");
+const summary = document.getElementById("summary");
+const reportTable = document.getElementById("reportTable");
+const actions = document.getElementById("actions");
+
+let refreshTimer = null;
+
+function showMsg(text){
+  msg.textContent = text || "";
+}
+
+function showDebug(text){
+  debug.textContent = text || "";
+}
+
+function showLogin(show){
+  loginBox.style.display = show ? "block" : "none";
+}
+
+function showReport(show){
+  summary.style.display = show ? "flex" : "none";
+  reportTable.style.display = show ? "table" : "none";
+  actions.style.display = show ? "block" : "none";
+}
+
+function startAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(loadAdmin, 2 * 60 * 1000);
+}
+
+async function loadAdmin(){
+  try{
+    const r = await fetch("/admin/report",{credentials:"same-origin"});
+    showDebug(`GET /admin/report → ${r.status}`);
+    if(!r.ok) throw new Error("unauthorized");
+
+    const data = await r.json();
     if(!Array.isArray(data)){
-      alert("Login again");
-      location.href="/login.html";
+      showLogin(true);
+      showReport(false);
+      showMsg("Login required.");
       return;
     }
+
+    showLogin(false);
+    showReport(true);
+    showMsg("");
 
     let upi=0,cash=0;
     document.getElementById("count").innerText=data.length;
@@ -109,7 +218,57 @@ fetch("/admin/report",{credentials:"same-origin"})
 
     document.getElementById("upi").innerText=upi;
     document.getElementById("cash").innerText=cash;
+
+    if(!data.length) showMsg("No orders yet");
+    startAutoRefresh();
+  }catch{
+    showLogin(true);
+    showReport(false);
+    showMsg("Login required.");
+  }
+}
+
+function doLogin(){
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const loginMsg = document.getElementById("loginMsg");
+
+  if(!username || !password){
+    loginMsg.textContent = "Enter username and password";
+    return;
+  }
+
+  fetch("/login",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    credentials:"include",
+    body:JSON.stringify({username,password})
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(!d.success || d.role!=="admin"){
+      loginMsg.textContent = "Invalid admin login";
+      return;
+    }
+    loginMsg.textContent = "";
+    loadAdmin();
+  })
+  .catch(()=>{
+    loginMsg.textContent = "Server error";
   });
+}
+
+function doLogout(){
+  fetch("/logout",{method:"POST",credentials:"same-origin"})
+    .then(()=>{
+      if(refreshTimer) clearInterval(refreshTimer);
+      showLogin(true);
+      showReport(false);
+      showMsg("Logged out.");
+    });
+}
+
+loadAdmin();
 </script>
 
 </body>
